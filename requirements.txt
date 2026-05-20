@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+faster-whisper
+websockets
+pyaudio
+google-genai
+python-dotenv
+aiohttp
+piper-tts
+psutil

@@ -1,0 +1,19 @@
+# Environments
+venv/
+env/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE / OS
+.vscode/
+.DS_Store
+
+# Models
+models/
+*.onnx
+*.onnx.json
+*.bin

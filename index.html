@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice AI | Realtime Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --accent-color: #3b82f6;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --success-color: #10b981;
+            --ai-color: #8b5cf6;
+            --warning-color: #f59e0b;
+            --partial-color: rgba(59, 130, 246, 0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            background-image:
+                radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 40%),
+                radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.15), transparent 40%);
+        }
+
+        .container { max-width: 800px; width: 100%; margin-top: 1rem; }
+
+        header { text-align: center; margin-bottom: 2rem; }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle { color: #94a3b8; font-size: 1.05rem; }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #startBtn {
+            background-color: var(--accent-color);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+        }
+        #startBtn:hover { background-color: #2563eb; transform: translateY(-2px); }
+        #startBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        #stopBtn {
+            background-color: transparent;
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        #stopBtn:hover { background-color: rgba(239, 68, 68, 0.1); }
+        #stopBtn:disabled { opacity: 0.5; cursor: not-allowed; background-color: transparent; }
+
+        /* ── Status bar ── */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .status-indicator { display: flex; align-items: center; gap: 0.5rem; }
+
+        .dot {
+            width: 10px; height: 10px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+        .dot.connected { background-color: var(--success-color); box-shadow: 0 0 10px var(--success-color); }
+        .dot.speaking { background-color: var(--accent-color); box-shadow: 0 0 12px var(--accent-color); animation: pulse 0.8s infinite; }
+
+        .session-id {
+            font-family: monospace;
+            background: rgba(0,0,0,0.3);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        /* ── Live partial transcript banner ── */
+        .partial-banner {
+            background: var(--partial-color);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 1rem;
+            min-height: 48px;
+            display: none;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.95rem;
+            color: #93c5fd;
+            transition: all 0.2s ease;
+        }
+        .partial-banner.visible { display: flex; }
+
+        .typing-dots { display: flex; gap: 3px; }
+        .typing-dots span {
+            width: 6px; height: 6px;
+            background: #60a5fa;
+            border-radius: 50%;
+            animation: dotBounce 1.2s infinite;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes dotBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+
+        .partial-text { flex: 1; font-style: italic; }
+        .partial-latency { font-family: monospace; font-size: 0.75rem; color: #64748b; }
+
+        /* ── Dashboard Metrics ── */
+        .dashboard {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.2rem;
+            backdrop-filter: blur(10px);
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+        .dashboard.visible { display: block; }
+        .dashboard h3 { margin-bottom: 0.8rem; font-size: 1rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;}
+        .metric-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .metric-row:last-child { border-bottom: none; }
+        .metric-row.total { font-weight: bold; color: var(--accent-color); padding-top: 0.8rem; }
+        .metric-val { font-family: monospace; }
+
+        /* ── Chat box ── */
+        .chat-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            min-height: 400px;
+            max-height: 520px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 12px;
+            max-width: 85%;
+            animation: slideIn 0.3s ease-out;
+            position: relative;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            background-color: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai {
+            background-color: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.ai.streaming {
+            border-color: rgba(139, 92, 246, 0.5);
+            box-shadow: 0 0 12px rgba(139, 92, 246, 0.1);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .role {
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .user .role { color: #60a5fa; }
+        .ai .role { color: #a78bfa; }
+
+        .latency {
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .first-token-badge {
+            font-family: monospace;
+            background: rgba(139, 92, 246, 0.2);
+            color: #c4b5fd;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-left: 0.4rem;
+        }
+
+        .text { font-size: 1.05rem; line-height: 1.6; }
+
+        /* Cursor blink on streaming message */
+        .streaming-cursor::after {
+            content: '▊';
+            animation: blink 0.7s infinite;
+            color: #a78bfa;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Scrollbar */
+        .chat-box::-webkit-scrollbar { width: 8px; }
+        .chat-box::-webkit-scrollbar-track { background: transparent; }
+        .chat-box::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+        .chat-box::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Realtime Voice AI</h1>
+        <p class="subtitle">Streaming STT → Local LLM → Live Response</p>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <button id="startBtn">Start Listening</button>
+            <button id="stopBtn" disabled>Stop</button>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="dot" id="statusDot"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+            <span class="session-id" id="sessionId" style="display:none;"></span>
+        </div>
+
+        <div class="partial-banner" id="partialBanner">
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+            <span class="partial-text" id="partialText">…</span>
+            <span class="partial-latency" id="partialLatency"></span>
+        </div>
+
+        <div class="dashboard" id="dashboardPanel">
+            <h3>⏱️ Turn Metrics</h3>
+            <div class="metric-row"><span class="metric-label">Speech Duration</span><span class="metric-val" id="mSpeech">-</span></div>
+            <div class="metric-row"><span class="metric-label">STT Latency</span><span class="metric-val" id="mSTT">-</span></div>
+            <div class="metric-row"><span class="metric-label">LLM First Token (TTFT)</span><span class="metric-val" id="mLLM">-</span></div>
+            <div class="metric-row"><span class="metric-label">Audio First Chunk</span><span class="metric-val" id="mTTS">-</span></div>
+            <div class="metric-row total"><span class="metric-label">End-to-End Latency</span><span class="metric-val" id="mTotal">-</span></div>
+        </div>
+
+        <div class="dashboard" id="sysMetricsPanel" style="display: none; margin-bottom: 1.5rem;">
+            <h3>💻 Live Resources</h3>
+            <div class="metric-row"><span class="metric-label">System CPU</span><span class="metric-val" id="sysCpu">-</span></div>
+            <div class="metric-row"><span class="metric-label">System RAM</span><span class="metric-val" id="sysMem">-</span></div>
+        </div>
+
+        <div class="chat-box" id="chatBox"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let audioContext = null;
+        let processor = null;
+        let input = null;
+        let globalStream = null;
+
+        // ── TTS Playback State ──
+        let ttsContext = null;
+        let ttsNextStartTime = 0;
+        let ttsNodes = [];
+
+        const startBtn       = document.getElementById('startBtn');
+        const stopBtn        = document.getElementById('stopBtn');
+        const statusDot      = document.getElementById('statusDot');
+        const statusText     = document.getElementById('statusText');
+        const sessionIdEl    = document.getElementById('sessionId');
+        const chatBox        = document.getElementById('chatBox');
+        const partialBanner  = document.getElementById('partialBanner');
+        const partialText    = document.getElementById('partialText');
+        const partialLatency = document.getElementById('partialLatency');
+
+        // ── State for streaming AI message ──
+        let activeAiMsg = null;   // DOM element of the AI message being streamed
+        let activeAiText = null;  // The .text span inside it
+
+        // ── Helpers ────────────────────────────────────────────────
+
+        function appendMessage(role, text, latencyMs, firstTokenMs) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+
+            const roleName = role === 'user' ? 'You' : 'AI';
+            let badges = '';
+            if (latencyMs != null) {
+                badges += `<span class="latency">⏱️ ${latencyMs}ms</span>`;
+            }
+            if (firstTokenMs != null) {
+                badges += `<span class="first-token-badge">1st token: ${firstTokenMs}ms</span>`;
+            }
+
+            msgDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="role">${roleName}</span>
+                    <span>${badges}</span>
+                </div>
+                <div class="text">${text}</div>
+            `;
+
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return msgDiv;
+        }
+
+        function startStreamingAiMessage() {
+            // Create an empty AI message bubble with streaming cursor
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ai streaming';
+            msgDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="role">AI</span>
+                    <span class="latency-container"></span>
+                </div>
+                <div class="text streaming-cursor"></div>
+            `;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            activeAiMsg = msgDiv;
+            activeAiText = msgDiv.querySelector('.text');
+            return msgDiv;
+        }
+
+        function appendTokenToAi(token) {
+            if (!activeAiText) return;
+            // Append token text
+            activeAiText.textContent += token;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function finalizeAiMessage(firstTokenMs, totalMs) {
+            if (!activeAiMsg) return;
+
+            // Remove streaming state
+            activeAiMsg.classList.remove('streaming');
+            activeAiText.classList.remove('streaming-cursor');
+
+            // Add latency badges
+            const container = activeAiMsg.querySelector('.latency-container');
+            if (container) {
+                let badges = '';
+                if (firstTokenMs != null) {
+                    badges += `<span class="first-token-badge">1st token: ${firstTokenMs}ms</span>`;
+                }
+                if (totalMs != null) {
+                    badges += `<span class="latency">⏱️ ${totalMs}ms total</span>`;
+                }
+                container.innerHTML = badges;
+            }
+
+            activeAiMsg = null;
+            activeAiText = null;
+        }
+
+        function showPartial(text, latencyMs) {
+            partialBanner.classList.add('visible');
+            partialText.textContent = text;
+            partialLatency.textContent = latencyMs != null ? `${latencyMs}ms` : '';
+        }
+
+        function hidePartial() {
+            partialBanner.classList.remove('visible');
+            partialText.textContent = '…';
+            partialLatency.textContent = '';
+        }
+
+        function setStatus(state) {
+            statusDot.classList.remove('connected', 'speaking');
+            switch (state) {
+                case 'connected':
+                    statusDot.classList.add('connected');
+                    statusText.textContent = 'Connected — waiting for speech';
+                    break;
+                case 'speaking':
+                    statusDot.classList.add('connected', 'speaking');
+                    statusText.textContent = 'Listening…';
+                    break;
+                case 'processing':
+                    statusDot.classList.add('connected');
+                    statusText.textContent = 'Processing…';
+                    break;
+                case 'streaming':
+                    statusDot.classList.add('connected');
+                    statusText.textContent = 'AI responding…';
+                    break;
+                default:
+                    statusText.textContent = 'Disconnected';
+            }
+        }
+
+        // ── TTS Playback ───────────────────────────────────────────
+        function initTtsContext() {
+            if (!ttsContext) {
+                ttsContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+            }
+            if (ttsContext.state === 'suspended') {
+                ttsContext.resume();
+            }
+        }
+
+        function flushAudioQueue() {
+            ttsNodes.forEach(node => {
+                try { node.stop(); } catch (e) {}
+            });
+            ttsNodes = [];
+            ttsNextStartTime = 0;
+        }
+
+        function scheduleAudioChunk(base64Data, sampleRate) {
+            if (!ttsContext) return;
+            
+            const binaryStr = atob(base64Data);
+            const len = binaryStr.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryStr.charCodeAt(i);
+            }
+            
+            const int16Array = new Int16Array(bytes.buffer);
+            const float32Array = new Float32Array(int16Array.length);
+            for (let i = 0; i < int16Array.length; i++) {
+                float32Array[i] = int16Array[i] / 32768.0;
+            }
+            
+            // Use the sample rate provided by Piper (usually 22050 or 24000)
+            const sr = sampleRate || 22050;
+            const audioBuffer = ttsContext.createBuffer(1, float32Array.length, sr);
+            audioBuffer.getChannelData(0).set(float32Array);
+            
+            const source = ttsContext.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(ttsContext.destination);
+            
+            if (ttsNextStartTime < ttsContext.currentTime) {
+                ttsNextStartTime = ttsContext.currentTime;
+            }
+            
+            source.start(ttsNextStartTime);
+            ttsNextStartTime += audioBuffer.duration;
+            
+            ttsNodes.push(source);
+            source.onended = () => {
+                const idx = ttsNodes.indexOf(source);
+                if (idx > -1) ttsNodes.splice(idx, 1);
+            };
+        }
+
+        // ── Streaming ──────────────────────────────────────────────
+
+        async function startStreaming() {
+            try {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                ws = new WebSocket(`${protocol}//${window.location.host}/ws/stream`);
+
+                ws.onopen = async () => {
+                    setStatus('connected');
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            sampleRate: 16000,
+                            channelCount: 1,
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true,
+                        },
+                        video: false,
+                    });
+                    globalStream = stream;
+
+                    // Initialize TTS playback context on user gesture
+                    initTtsContext();
+
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    audioContext = new AudioCtx({ sampleRate: 16000 });
+                    input = audioContext.createMediaStreamSource(stream);
+
+                    // 2048 samples @ 16kHz = 128ms chunks
+                    processor = audioContext.createScriptProcessor(2048, 1, 1);
+
+                    processor.onaudioprocess = (e) => {
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            const f32 = e.inputBuffer.getChannelData(0);
+                            const pcm = new Int16Array(f32.length);
+                            for (let i = 0; i < f32.length; i++) {
+                                let s = Math.max(-1, Math.min(1, f32[i]));
+                                pcm[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                            }
+                            ws.send(pcm.buffer);
+                        }
+                    };
+
+                    input.connect(processor);
+                    processor.connect(audioContext.destination);
+                };
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+
+                    switch (data.type) {
+                        case 'session_started':
+                            sessionIdEl.textContent = `Session: ${data.session_id}`;
+                            sessionIdEl.style.display = 'inline';
+                            break;
+
+                        case 'user_started_speaking':
+                            setStatus('speaking');
+                            flushAudioQueue(); // BARGE-IN: stop active TTS instantly
+                            break;
+
+                        case 'partial_transcript':
+                            showPartial(data.text, data.latency_ms);
+                            break;
+
+                        case 'user_stopped_speaking':
+                            setStatus('processing');
+                            hidePartial();
+                            break;
+
+                        case 'final_transcript':
+                            hidePartial();
+                            appendMessage('user', data.text, data.latency_ms);
+                            break;
+
+                        case 'llm_processing_started':
+                            setStatus('streaming');
+                            startStreamingAiMessage();
+                            break;
+
+                        case 'llm_partial_response':
+                            appendTokenToAi(data.token);
+                            // Show first-token badge immediately
+                            if (data.first_token_ms != null && activeAiMsg) {
+                                const container = activeAiMsg.querySelector('.latency-container');
+                                if (container && !container.innerHTML) {
+                                    container.innerHTML = `<span class="first-token-badge">1st token: ${data.first_token_ms}ms</span>`;
+                                }
+                            }
+                            break;
+
+                        case 'llm_final_response':
+                            finalizeAiMessage(data.first_token_ms, data.total_ms);
+                            break;
+
+                        case 'assistant_finished':
+                            setStatus('connected');
+                            break;
+
+                        case 'assistant_speaking_started':
+                            // TTS has started buffering
+                            break;
+                            
+                        case 'assistant_audio_chunk':
+                            scheduleAudioChunk(data.audio_b64, data.sample_rate);
+                            break;
+                            
+                        case 'assistant_speaking_finished':
+                            // Server finished sending all audio chunks
+                            break;
+
+                        case 'error':
+                            console.error('Server error:', data.message);
+                            break;
+
+                        case 'turn_metrics':
+                            document.getElementById('dashboardPanel').classList.add('visible');
+                            const m = data.metrics;
+                            const speechDur = m.speech_end;
+                            const sttLat = m.stt_end && m.speech_end ? m.stt_end - m.speech_end : null;
+                            const llmTtft = m.llm_first_token && m.stt_end ? m.llm_first_token - m.stt_end : null;
+                            const ttsTtfa = m.tts_first_chunk && m.llm_first_token ? m.tts_first_chunk - m.llm_first_token : null;
+                            const total = m.tts_first_chunk && m.speech_end ? m.tts_first_chunk - m.speech_end : null;
+                            
+                            document.getElementById('mSpeech').textContent = speechDur ? speechDur + 'ms' : '-';
+                            document.getElementById('mSTT').textContent = sttLat ? sttLat + 'ms' : '-';
+                            document.getElementById('mLLM').textContent = llmTtft ? llmTtft + 'ms' : '-';
+                            document.getElementById('mTTS').textContent = ttsTtfa ? ttsTtfa + 'ms' : '-';
+                            document.getElementById('mTotal').textContent = total ? total + 'ms' : '-';
+                            break;
+
+                        case 'system_metrics':
+                            document.getElementById('sysMetricsPanel').style.display = 'block';
+                            
+                            // Colorize CPU based on load
+                            const cpuEl = document.getElementById('sysCpu');
+                            cpuEl.textContent = `${data.cpu_percent}%`;
+                            cpuEl.style.color = data.cpu_percent > 80 ? '#ef4444' : (data.cpu_percent > 50 ? '#f59e0b' : '#10b981');
+                            
+                            document.getElementById('sysMem').textContent = `${data.mem_used_gb} GB (${data.mem_percent}%)`;
+                            break;
+
+                        // Legacy fallbacks
+                        case 'transcript':
+                            appendMessage('user', data.text, data.latency_ms);
+                            break;
+                        case 'ai_response':
+                        case 'llm_response':
+                            appendMessage('ai', data.text, data.latency_ms);
+                            break;
+                    }
+                };
+
+                ws.onclose = () => stopStreaming();
+                ws.onerror = (err) => { console.error("WS error:", err); stopStreaming(); };
+
+            } catch (err) {
+                console.error("Mic error:", err);
+                alert("Could not access microphone.");
+                stopStreaming();
+            }
+        }
+
+        function stopStreaming() {
+            if (processor) { processor.disconnect(); processor = null; }
+            if (input) { input.disconnect(); input = null; }
+            if (audioContext) { audioContext.close(); audioContext = null; }
+            if (globalStream) { globalStream.getTracks().forEach(t => t.stop()); globalStream = null; }
+            if (ws) { ws.close(); ws = null; }
+
+            setStatus('disconnected');
+            hidePartial();
+            finalizeAiMessage(null, null);
+            sessionIdEl.style.display = 'none';
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+
+        startBtn.addEventListener('click', startStreaming);
+        stopBtn.addEventListener('click', stopStreaming);
+    </script>
+</body>
+</html>
