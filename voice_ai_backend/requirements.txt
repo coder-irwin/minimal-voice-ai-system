@@ -8,3 +8,6 @@ python-dotenv
 aiohttp
 piper-tts
 psutil
+kokoro-onnx
+soundfile
+webrtcvad

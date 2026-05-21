@@ -98,71 +98,63 @@
 
         .dot {
             width: 10px; height: 10px;
-            background-color: #ef4444;
             border-radius: 50%;
+            background-color: #475569;
             transition: background-color 0.3s ease;
         }
-        .dot.connected { background-color: var(--success-color); box-shadow: 0 0 10px var(--success-color); }
-        .dot.speaking { background-color: var(--accent-color); box-shadow: 0 0 12px var(--accent-color); animation: pulse 0.8s infinite; }
-
-        .session-id {
-            font-family: monospace;
-            background: rgba(0,0,0,0.3);
-            padding: 0.2rem 0.6rem;
-            border-radius: 4px;
-        }
+        .dot.connected { background-color: var(--success-color); }
+        .dot.speaking { background-color: var(--warning-color); animation: pulse 1s infinite; }
 
         @keyframes pulse {
-            0% { transform: scale(0.95); opacity: 0.8; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(0.95); opacity: 0.8; }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
-        /* ── Live partial transcript banner ── */
+        .session-id {
+            font-size: 0.75rem;
+            color: #64748b;
+            font-family: monospace;
+        }
+
+        /* ── Partial banner ── */
         .partial-banner {
             background: var(--partial-color);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            border-radius: 12px;
-            padding: 0.8rem 1.2rem;
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            border-radius: 10px;
+            padding: 0.6rem 1rem;
             margin-bottom: 1rem;
-            min-height: 48px;
             display: none;
             align-items: center;
-            gap: 0.6rem;
-            font-size: 0.95rem;
+            gap: 0.8rem;
+            font-size: 0.9rem;
             color: #93c5fd;
-            transition: all 0.2s ease;
         }
         .partial-banner.visible { display: flex; }
+        .partial-text { flex: 1; font-style: italic; }
+        .partial-latency { font-size: 0.75rem; color: #64748b; font-family: monospace; }
 
         .typing-dots { display: flex; gap: 3px; }
         .typing-dots span {
-            width: 6px; height: 6px;
+            width: 6px; height: 6px; border-radius: 50%;
             background: #60a5fa;
-            border-radius: 50%;
-            animation: dotBounce 1.2s infinite;
+            animation: typing 1.4s infinite ease-in-out both;
         }
         .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
         .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes dotBounce {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-4px); }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
         }
 
-        .partial-text { flex: 1; font-style: italic; }
-        .partial-latency { font-family: monospace; font-size: 0.75rem; color: #64748b; }
-
-        /* ── Dashboard Metrics ── */
+        /* ── Dashboard ── */
         .dashboard {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
-            padding: 1.2rem;
+            padding: 1rem;
             backdrop-filter: blur(10px);
-            margin-bottom: 1.5rem;
-            font-size: 0.9rem;
             display: none;
+            margin-bottom: 1.5rem;
         }
         .dashboard.visible { display: block; }
         .dashboard h3 { margin-bottom: 0.8rem; font-size: 1rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;}
@@ -171,90 +163,138 @@
         .metric-row.total { font-weight: bold; color: var(--accent-color); padding-top: 0.8rem; }
         .metric-val { font-family: monospace; }
 
+        /* ── Control Panel ── */
+        .control-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            transition: opacity 0.3s ease;
+        }
+        .control-panel.locked {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .control-panel.locked::after {
+            content: '🔒 Config locked during session';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.8rem;
+            color: #94a3b8;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+        .cp-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            flex: 1;
+            min-width: 150px;
+            position: relative;
+        }
+        .cp-group label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+        .cp-group select {
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-color);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            padding: 0.5rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .cp-group select:focus {
+            border-color: var(--accent-color);
+        }
+        .cp-group select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         /* ── Chat box ── */
         .chat-box {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            min-height: 400px;
-            max-height: 520px;
+            border-radius: 12px;
+            padding: 1rem;
+            min-height: 200px;
+            max-height: 50vh;
             overflow-y: auto;
             backdrop-filter: blur(10px);
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
         }
 
         .message {
-            padding: 1rem;
-            border-radius: 12px;
-            max-width: 85%;
-            animation: slideIn 0.3s ease-out;
-            position: relative;
+            margin-bottom: 1rem;
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease-out;
         }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         .message.user {
-            background-color: rgba(59, 130, 246, 0.15);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            align-self: flex-end;
-            border-bottom-right-radius: 4px;
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.15);
         }
 
         .message.ai {
-            background-color: rgba(139, 92, 246, 0.15);
-            border: 1px solid rgba(139, 92, 246, 0.3);
-            align-self: flex-start;
-            border-bottom-left-radius: 4px;
-        }
-
-        .message.ai.streaming {
-            border-color: rgba(139, 92, 246, 0.5);
-            box-shadow: 0 0 12px rgba(139, 92, 246, 0.1);
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.15);
         }
 
         .message-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.5rem;
-            font-size: 0.8rem;
-            color: #94a3b8;
+            margin-bottom: 0.3rem;
         }
 
         .role {
             font-weight: 600;
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
-        .user .role { color: #60a5fa; }
-        .ai .role { color: #a78bfa; }
+        .message.user .role { color: #60a5fa; }
+        .message.ai .role { color: #a78bfa; }
 
         .latency {
+            font-size: 0.72rem;
+            color: #64748b;
             font-family: monospace;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
         }
 
         .first-token-badge {
+            font-size: 0.72rem;
+            color: var(--success-color);
             font-family: monospace;
-            background: rgba(139, 92, 246, 0.2);
-            color: #c4b5fd;
-            padding: 0.15rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            margin-left: 0.4rem;
+            margin-right: 0.5rem;
         }
 
-        .text { font-size: 1.05rem; line-height: 1.6; }
+        .text { word-break: break-word; }
 
-        /* Cursor blink on streaming message */
+        /* Streaming AI message cursor */
         .streaming-cursor::after {
             content: '▊';
             animation: blink 0.7s infinite;
@@ -280,6 +320,23 @@
     </header>
 
     <div class="container">
+
+        <!-- ── Control Panel (PRE-SESSION config) ── -->
+        <div class="control-panel" id="controlPanel" style="position: relative;">
+            <div class="cp-group">
+                <label for="llmSelect">LLM Model</label>
+                <select id="llmSelect"><option>Not connected</option></select>
+            </div>
+            <div class="cp-group">
+                <label for="ttsEngineSelect">TTS Engine</label>
+                <select id="ttsEngineSelect"><option>Not connected</option></select>
+            </div>
+            <div class="cp-group">
+                <label for="ttsVoiceSelect">TTS Voice</label>
+                <select id="ttsVoiceSelect"><option>Not connected</option></select>
+            </div>
+        </div>
+
         <div class="controls">
             <button id="startBtn">Start Listening</button>
             <button id="stopBtn" disabled>Stop</button>
@@ -318,16 +375,22 @@
     </div>
 
     <script>
+        // ── State ──
         let ws = null;
         let audioContext = null;
         let processor = null;
         let input = null;
         let globalStream = null;
+        let sessionActive = false;
 
-        // ── TTS Playback State ──
-        let ttsContext = null;
-        let ttsNextStartTime = 0;
-        let ttsNodes = [];
+        // TTS voices cache received from server
+        let globalTtsVoices = {};
+
+        // ── DOM refs ──
+        const llmSelect = document.getElementById('llmSelect');
+        const ttsEngineSelect = document.getElementById('ttsEngineSelect');
+        const ttsVoiceSelect = document.getElementById('ttsVoiceSelect');
+        const controlPanel = document.getElementById('controlPanel');
 
         const startBtn       = document.getElementById('startBtn');
         const stopBtn        = document.getElementById('stopBtn');
@@ -339,12 +402,40 @@
         const partialText    = document.getElementById('partialText');
         const partialLatency = document.getElementById('partialLatency');
 
-        // ── State for streaming AI message ──
-        let activeAiMsg = null;   // DOM element of the AI message being streamed
-        let activeAiText = null;  // The .text span inside it
+        // ── TTS Playback State ──
+        let ttsContext = null;
+        let ttsNextStartTime = 0;
+        let ttsNodes = [];
 
-        // ── Helpers ────────────────────────────────────────────────
+        // ── Streaming AI message state ──
+        let activeAiMsg = null;
+        let activeAiText = null;
 
+        // ── Control Panel ──
+        ttsEngineSelect.addEventListener('change', (e) => {
+            populateVoices(e.target.value);
+        });
+
+        function populateVoices(engine) {
+            ttsVoiceSelect.innerHTML = '';
+            const voices = globalTtsVoices[engine] || [];
+            voices.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                ttsVoiceSelect.appendChild(opt);
+            });
+        }
+
+        function lockControlPanel() {
+            controlPanel.classList.add('locked');
+        }
+
+        function unlockControlPanel() {
+            controlPanel.classList.remove('locked');
+        }
+
+        // ── Helpers ──
         function appendMessage(role, text, latencyMs, firstTokenMs) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${role}`;
@@ -372,7 +463,6 @@
         }
 
         function startStreamingAiMessage() {
-            // Create an empty AI message bubble with streaming cursor
             const msgDiv = document.createElement('div');
             msgDiv.className = 'message ai streaming';
             msgDiv.innerHTML = `
@@ -392,7 +482,6 @@
 
         function appendTokenToAi(token) {
             if (!activeAiText) return;
-            // Append token text
             activeAiText.textContent += token;
             chatBox.scrollTop = chatBox.scrollHeight;
         }
@@ -400,11 +489,9 @@
         function finalizeAiMessage(firstTokenMs, totalMs) {
             if (!activeAiMsg) return;
 
-            // Remove streaming state
             activeAiMsg.classList.remove('streaming');
             activeAiText.classList.remove('streaming-cursor');
 
-            // Add latency badges
             const container = activeAiMsg.querySelector('.latency-container');
             if (container) {
                 let badges = '';
@@ -457,14 +544,16 @@
             }
         }
 
-        // ── TTS Playback ───────────────────────────────────────────
-        function initTtsContext() {
-            if (!ttsContext) {
-                ttsContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        // ── TTS Playback ──
+        function initTtsContext(sampleRate) {
+            // Create TTS AudioContext at the CORRECT sample rate
+            // (this avoids resampling distortion)
+            if (ttsContext) {
+                ttsContext.close();
             }
-            if (ttsContext.state === 'suspended') {
-                ttsContext.resume();
-            }
+            ttsContext = new (window.AudioContext || window.webkitAudioContext)();
+            ttsNextStartTime = 0;
+            ttsNodes = [];
         }
 
         function flushAudioQueue() {
@@ -477,36 +566,43 @@
 
         function scheduleAudioChunk(base64Data, sampleRate) {
             if (!ttsContext) return;
-            
+
+            // Resume if suspended (browser autoplay policy)
+            if (ttsContext.state === 'suspended') {
+                ttsContext.resume();
+            }
+
             const binaryStr = atob(base64Data);
             const len = binaryStr.length;
             const bytes = new Uint8Array(len);
             for (let i = 0; i < len; i++) {
                 bytes[i] = binaryStr.charCodeAt(i);
             }
-            
+
             const int16Array = new Int16Array(bytes.buffer);
             const float32Array = new Float32Array(int16Array.length);
             for (let i = 0; i < int16Array.length; i++) {
                 float32Array[i] = int16Array[i] / 32768.0;
             }
-            
-            // Use the sample rate provided by Piper (usually 22050 or 24000)
+
+            // Use the EXACT sample rate from the TTS engine (22050 for Piper, 24000 for Kokoro)
             const sr = sampleRate || 22050;
             const audioBuffer = ttsContext.createBuffer(1, float32Array.length, sr);
             audioBuffer.getChannelData(0).set(float32Array);
-            
+
             const source = ttsContext.createBufferSource();
             source.buffer = audioBuffer;
             source.connect(ttsContext.destination);
-            
-            if (ttsNextStartTime < ttsContext.currentTime) {
-                ttsNextStartTime = ttsContext.currentTime;
+
+            // Schedule gapless playback
+            const now = ttsContext.currentTime;
+            if (ttsNextStartTime < now) {
+                ttsNextStartTime = now + 0.02; // tiny buffer to avoid clicks
             }
-            
+
             source.start(ttsNextStartTime);
             ttsNextStartTime += audioBuffer.duration;
-            
+
             ttsNodes.push(source);
             source.onended = () => {
                 const idx = ttsNodes.indexOf(source);
@@ -514,8 +610,7 @@
             };
         }
 
-        // ── Streaming ──────────────────────────────────────────────
-
+        // ── Streaming ──
         async function startStreaming() {
             try {
                 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -525,6 +620,19 @@
                     setStatus('connected');
                     startBtn.disabled = true;
                     stopBtn.disabled = false;
+                    sessionActive = true;
+
+                    // Lock the control panel — no changes during session
+                    lockControlPanel();
+
+                    // Send the chosen config to server IMMEDIATELY on connect
+                    const config = {
+                        type: 'set_config',
+                        llm_model: llmSelect.value,
+                        tts_engine: ttsEngineSelect.value,
+                        tts_voice: ttsVoiceSelect.value
+                    };
+                    ws.send(JSON.stringify(config));
 
                     const stream = await navigator.mediaDevices.getUserMedia({
                         audio: {
@@ -568,6 +676,32 @@
                     const data = JSON.parse(event.data);
 
                     switch (data.type) {
+                        case 'available_models':
+                            // Populate LLM dropdown
+                            llmSelect.innerHTML = '';
+                            data.llms.forEach(m => {
+                                const opt = document.createElement('option');
+                                opt.value = m;
+                                opt.textContent = m;
+                                llmSelect.appendChild(opt);
+                            });
+
+                            // Populate TTS Engine dropdown
+                            ttsEngineSelect.innerHTML = '';
+                            data.tts_engines.forEach(e => {
+                                const opt = document.createElement('option');
+                                opt.value = e;
+                                opt.textContent = e;
+                                ttsEngineSelect.appendChild(opt);
+                            });
+
+                            // Cache voices and populate for the first engine
+                            globalTtsVoices = data.tts_voices;
+                            if (data.tts_engines.length > 0) {
+                                populateVoices(data.tts_engines[0]);
+                            }
+                            break;
+
                         case 'session_started':
                             sessionIdEl.textContent = `Session: ${data.session_id}`;
                             sessionIdEl.style.display = 'inline';
@@ -599,7 +733,6 @@
 
                         case 'llm_partial_response':
                             appendTokenToAi(data.token);
-                            // Show first-token badge immediately
                             if (data.first_token_ms != null && activeAiMsg) {
                                 const container = activeAiMsg.querySelector('.latency-container');
                                 if (container && !container.innerHTML) {
@@ -617,15 +750,13 @@
                             break;
 
                         case 'assistant_speaking_started':
-                            // TTS has started buffering
                             break;
-                            
+
                         case 'assistant_audio_chunk':
                             scheduleAudioChunk(data.audio_b64, data.sample_rate);
                             break;
-                            
+
                         case 'assistant_speaking_finished':
-                            // Server finished sending all audio chunks
                             break;
 
                         case 'error':
@@ -640,7 +771,7 @@
                             const llmTtft = m.llm_first_token && m.stt_end ? m.llm_first_token - m.stt_end : null;
                             const ttsTtfa = m.tts_first_chunk && m.llm_first_token ? m.tts_first_chunk - m.llm_first_token : null;
                             const total = m.tts_first_chunk && m.speech_end ? m.tts_first_chunk - m.speech_end : null;
-                            
+
                             document.getElementById('mSpeech').textContent = speechDur ? speechDur + 'ms' : '-';
                             document.getElementById('mSTT').textContent = sttLat ? sttLat + 'ms' : '-';
                             document.getElementById('mLLM').textContent = llmTtft ? llmTtft + 'ms' : '-';
@@ -650,13 +781,14 @@
 
                         case 'system_metrics':
                             document.getElementById('sysMetricsPanel').style.display = 'block';
-                            
-                            // Colorize CPU based on load
                             const cpuEl = document.getElementById('sysCpu');
                             cpuEl.textContent = `${data.cpu_percent}%`;
                             cpuEl.style.color = data.cpu_percent > 80 ? '#ef4444' : (data.cpu_percent > 50 ? '#f59e0b' : '#10b981');
-                            
                             document.getElementById('sysMem').textContent = `${data.mem_used_gb} GB (${data.mem_percent}%)`;
+                            break;
+
+                        case 'config_updated':
+                            console.log('Config accepted by server');
                             break;
 
                         // Legacy fallbacks
@@ -681,11 +813,13 @@
         }
 
         function stopStreaming() {
+            sessionActive = false;
             if (processor) { processor.disconnect(); processor = null; }
             if (input) { input.disconnect(); input = null; }
             if (audioContext) { audioContext.close(); audioContext = null; }
             if (globalStream) { globalStream.getTracks().forEach(t => t.stop()); globalStream = null; }
             if (ws) { ws.close(); ws = null; }
+            if (ttsContext) { flushAudioQueue(); ttsContext.close(); ttsContext = null; }
 
             setStatus('disconnected');
             hidePartial();
@@ -693,10 +827,55 @@
             sessionIdEl.style.display = 'none';
             startBtn.disabled = false;
             stopBtn.disabled = true;
+
+            // Unlock the control panel for reconfiguration
+            unlockControlPanel();
         }
 
         startBtn.addEventListener('click', startStreaming);
         stopBtn.addEventListener('click', stopStreaming);
+
+        // ── Pre-fetch available models on page load ──
+        async function prefetchModels() {
+            try {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const prefetchWs = new WebSocket(`${protocol}//${window.location.host}/ws/stream`);
+                prefetchWs.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'available_models') {
+                        llmSelect.innerHTML = '';
+                        data.llms.forEach(m => {
+                            const opt = document.createElement('option');
+                            opt.value = m;
+                            opt.textContent = m;
+                            llmSelect.appendChild(opt);
+                        });
+
+                        ttsEngineSelect.innerHTML = '';
+                        data.tts_engines.forEach(e => {
+                            const opt = document.createElement('option');
+                            opt.value = e;
+                            opt.textContent = e;
+                            ttsEngineSelect.appendChild(opt);
+                        });
+
+                        globalTtsVoices = data.tts_voices;
+                        if (data.tts_engines.length > 0) {
+                            populateVoices(data.tts_engines[0]);
+                        }
+
+                        // Close the prefetch connection
+                        prefetchWs.close();
+                    }
+                };
+                prefetchWs.onerror = () => prefetchWs.close();
+            } catch (e) {
+                console.warn('Prefetch failed, will populate on connect:', e);
+            }
+        }
+
+        // Auto-prefetch on page load
+        prefetchModels();
     </script>
 </body>
 </html>

@@ -17,3 +17,8 @@ models/
 *.onnx
 *.onnx.json
 *.bin
+
+# Recordings / Logs
+*.wav
+sessions/
+

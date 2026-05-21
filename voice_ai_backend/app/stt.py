@@ -30,14 +30,36 @@ class STTEngine:
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, model_size: str = "base.en", compute_type: str = "default"):
+    def __init__(self, model_size: str = None, compute_type: str = "default"):
         if self._initialized:
             return
-        logger.info(f"Loading Faster-Whisper model: {model_size}")
-        # 'auto' picks CUDA when available, else CPU
-        self.model = WhisperModel(model_size, device="auto", compute_type=compute_type)
+
+        from app.hardware_manager import hardware_manager
+        from app.deployment_config import deployment_config
+
+        stt_cfg = deployment_config.get("stt")
+        if model_size is None:
+            model_size = stt_cfg.get("model_size", "base.en")
+
+        device = "cuda" if hardware_manager.supports_cuda else "cpu"
+        if compute_type == "default":
+            compute_type = stt_cfg.get("compute_type", "int8") if stt_cfg.get("compute_type") != "default" else ("float16" if device == "cuda" else "int8")
+
+        logger.info(f"Loading Faster-Whisper model '{model_size}' (profile-configured, device={device}, compute_type={compute_type})")
+        
+        try:
+            self.model = WhisperModel(model_size, device=device, compute_type=compute_type)
+            logger.info(f"STT model '{model_size}' loaded successfully on {device} ({compute_type})")
+        except Exception as e:
+            logger.warning(f"Failed to load Whisper on {device} with {compute_type} ({e}). Falling back to CPU with int8.")
+            try:
+                self.model = WhisperModel(model_size, device="cpu", compute_type="int8")
+                logger.info(f"STT model '{model_size}' loaded successfully on CPU (int8 fallback)")
+            except Exception as ex:
+                logger.error(f"Failsafe STT initialization failed completely: {ex}")
+                raise ex
+
         self._initialized = True
-        logger.info("STT model loaded successfully (singleton)")
 
     # ------------------------------------------------------------------
     # Streaming partial transcription — called frequently on small chunks
@@ -87,13 +109,13 @@ class STTEngine:
             segments, _ = await asyncio.to_thread(
                 self.model.transcribe,
                 audio_np,
-                beam_size=3,
+                beam_size=1,
                 best_of=1,
                 temperature=0.0,
                 vad_filter=True,
                 vad_parameters=dict(
-                    min_silence_duration_ms=500,
-                    speech_pad_ms=200,
+                    min_silence_duration_ms=300,
+                    speech_pad_ms=100,
                 ),
                 without_timestamps=True,
                 language="en",

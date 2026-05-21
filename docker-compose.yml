@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: voice-ai-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_storage:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  voice-backend:
+    build:
+      context: ./voice_ai_backend
+      dockerfile: Dockerfile
+    container_name: voice-ai-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DEPLOYMENT_PROFILE=gpu_server  # Adaptable profile (local_dev, cpu_server, gpu_server, cloud_gpu)
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - ONNX_PROVIDER=CUDAExecutionProvider  # Automatically attempts CUDA inside container, falls back to CPU
+    volumes:
+      - session_data:/data/sessions
+    depends_on:
+      ollama:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  ollama_storage:
+    driver: local
+  session_data:
+    driver: local
