@@ -117,6 +117,62 @@ def validate_and_convert_booking(date_str: str, time_str: str, tz_str: str) -> d
     }
 
 
+class PromptSwitcher:
+    """Dynamic speech style configuration registry and prompt switcher."""
+    
+    SPEECH_STYLES = {
+        "orpheus": (
+            "\nSPEECH OUTPUT RULE (ORPHEUS MODE):\n"
+            "- Write for SPEECH, not writing. Pause naturally, restart thoughts, varying emotional pacing.\n"
+            "- Use natural hesitations and conversational rhythm (e.g. 'So yeah... honestly...', 'Um...', 'I mean...').\n"
+            "- Allowed tags: <laugh>, <chuckle>, <sigh>, <gasp>. Use them sparingly when emotionally useful.\n"
+            "- Focus on absolute emotional realism and natural conversational cadence.\n"
+        ),
+        "chattts": (
+            "\nSPEECH OUTPUT RULE (CHATTTS MODE):\n"
+            "- Write for highly conversational, relaxed dialogue. Pause naturally.\n"
+            "- Supported paralinguistic tags: [laughter], [sigh], [gasp], [uv_break]. Use them sparingly mid-sentence.\n"
+            "- *Example*: 'Honestly, I didn't think this would work [laughter] but it is amazing!'\n"
+            "- Keep sentences short and easy to speak aloud.\n"
+        ),
+        "bark": (
+            "\nSPEECH OUTPUT RULE (BARK MODE):\n"
+            "- Support rich, expressive paralinguistic cues and creative pacing.\n"
+            "- Supported paralinguistic tags: [laughter], [chuckles], [sighs], [gasp], [whispers], [crying].\n"
+            "- Use them only when emotionally useful. Keep responses very concise.\n"
+        ),
+        "fish_speech": (
+            "\nSPEECH OUTPUT RULE (FISH SPEECH MODE):\n"
+            "- Write for highly expressive, zero-shot voice cloned speech with extreme realism.\n"
+            "- Supports natural language paralinguistic tone guidelines and emotive descriptions.\n"
+            "- Supported paralinguistic tags: [laugh], [sigh], [whisper in a small voice], [gasp]. Use sparingly mid-sentence.\n"
+        ),
+        "f5tts": (
+            "\nSPEECH OUTPUT RULE (F5-TTS MODE):\n"
+            "- Optimised for Flow Matching zero-shot voice cloning.\n"
+            "- Mimics the precise emotional state, natural breathing pauses, and whisper of the cloned speaker.\n"
+            "- Keep sentences natural, concise, and highly conversational.\n"
+        ),
+        "kokoro": (
+            "\nSPEECH OUTPUT RULE (KOKORO MODE):\n"
+            "- Write for stable, clear speech. Use cleaner sentence structure.\n"
+            "- Reduce punctuation complexity. Do NOT use stacked punctuation, long ellipses, or chaotic phrasing.\n"
+            "- Optimize for low-latency, high-stability synthesis and fast vocoder speed.\n"
+        )
+    }
+
+    @classmethod
+    def get_speech_prompt_rules(cls, engine: str) -> str:
+        """Returns the specific paralinguistic and speech rules for the requested TTS engine."""
+        return cls.SPEECH_STYLES.get(
+            engine.lower().strip(),
+            (
+                "\nSPEECH OUTPUT RULE:\n"
+                "- Keep sentences short, clean, and highly conversational. Easy and natural to say aloud.\n"
+            )
+        )
+
+
 class MemoryManager:
     """Manages conversational memory with zero-LLM background processing."""
 
@@ -125,12 +181,14 @@ class MemoryManager:
 
     def build_messages(self, session: 'Session') -> list[dict]:
         """Construct the optimized prompt using all memory layers."""
-        from app.session import SYSTEM_PROMPT, BUSINESS_LOGIC, SCHEDULING_RULES
+        from app.session import PERSONAS, BUSINESS_LOGIC, SCHEDULING_RULES
 
         messages = []
         
         # 1. Base System Prompt (always ultra-compact)
-        system_content = SYSTEM_PROMPT + "\n\n"
+        persona_name = getattr(session, "persona", "angelina").lower()
+        base_prompt = PERSONAS.get(persona_name, PERSONAS.get("angelina"))
+        system_content = base_prompt + "\n\n"
         
         # Inject dynamic prompt blocks based on conversational state
         state = getattr(session, "conversational_state", "greeting")
@@ -151,6 +209,17 @@ class MemoryManager:
             system_content += "\nActive Meetings:\n"
             for task in session.active_tasks:
                 system_content += f"- {task.get('topic','')}: {task.get('time_local','')} {task.get('timezone','')} on {task.get('date_iso','')}\n"
+
+        # 2.5 SPEECH OPTIMIZATION ENGINE (Dynamic Prompt Switcher based on active TTS engine)
+        active_tts = getattr(session, "tts_engine", "piper").lower()
+        system_content += PromptSwitcher.get_speech_prompt_rules(active_tts)
+
+        # Dynamic LLM model size adaptation rules
+        llm_model = getattr(session, "llm_model", "qwen2.5:1.5b").lower()
+        if "0.5b" in llm_model or "tiny" in llm_model:
+            system_content += "- Keep instructions lightweight, minimize emotional complexity and tags, keep phrasing direct and simple.\n"
+        elif "8b" in llm_model or "7b" in llm_model or "9b" in llm_model:
+            system_content += "- Allow subtle emotional pacing, rich nuance, and conversational variation.\n"
 
         messages.append({"role": "system", "content": system_content.strip()})
 

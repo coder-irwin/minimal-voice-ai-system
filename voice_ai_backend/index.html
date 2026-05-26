@@ -328,6 +328,10 @@
                 <select id="llmSelect"><option>Not connected</option></select>
             </div>
             <div class="cp-group">
+                <label for="personaSelect">Persona</label>
+                <select id="personaSelect"><option>Not connected</option></select>
+            </div>
+            <div class="cp-group">
                 <label for="ttsEngineSelect">TTS Engine</label>
                 <select id="ttsEngineSelect"><option>Not connected</option></select>
             </div>
@@ -388,6 +392,7 @@
 
         // ── DOM refs ──
         const llmSelect = document.getElementById('llmSelect');
+        const personaSelect = document.getElementById('personaSelect');
         const ttsEngineSelect = document.getElementById('ttsEngineSelect');
         const ttsVoiceSelect = document.getElementById('ttsVoiceSelect');
         const controlPanel = document.getElementById('controlPanel');
@@ -629,6 +634,7 @@
                     const config = {
                         type: 'set_config',
                         llm_model: llmSelect.value,
+                        persona: personaSelect.value,
                         tts_engine: ttsEngineSelect.value,
                         tts_voice: ttsVoiceSelect.value
                     };
@@ -685,6 +691,18 @@
                                 opt.textContent = m;
                                 llmSelect.appendChild(opt);
                             });
+
+                            // Populate Persona dropdown
+                            personaSelect.innerHTML = '';
+                            if (data.personas) {
+                                data.personas.forEach(p => {
+                                    const opt = document.createElement('option');
+                                    opt.value = p;
+                                    // Capitalize first letter for premium display label
+                                    opt.textContent = p.charAt(0).toUpperCase() + p.slice(1);
+                                    personaSelect.appendChild(opt);
+                                });
+                            }
 
                             // Populate TTS Engine dropdown
                             ttsEngineSelect.innerHTML = '';
@@ -850,6 +868,16 @@
                             opt.textContent = m;
                             llmSelect.appendChild(opt);
                         });
+
+                        personaSelect.innerHTML = '';
+                        if (data.personas) {
+                            data.personas.forEach(p => {
+                                const opt = document.createElement('option');
+                                opt.value = p;
+                                opt.textContent = p.charAt(0).toUpperCase() + p.slice(1);
+                                personaSelect.appendChild(opt);
+                            });
+                        }
 
                         ttsEngineSelect.innerHTML = '';
                         data.tts_engines.forEach(e => {

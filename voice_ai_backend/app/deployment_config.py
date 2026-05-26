@@ -27,9 +27,9 @@ PROFILES: Dict[str, Dict[str, Any]] = {
             "options": {
                 "temperature": 0.2,
                 "top_p": 0.9,
-                "num_predict": 64,
+                "num_predict": 150,
                 "repeat_penalty": 1.05,
-                "num_ctx": 1024,
+                "num_ctx": 512,
             }
         },
         "persistence": {
@@ -57,7 +57,7 @@ PROFILES: Dict[str, Dict[str, Any]] = {
             "options": {
                 "temperature": 0.2,
                 "top_p": 0.9,
-                "num_predict": 64,
+                "num_predict": 150,
                 "repeat_penalty": 1.05,
                 "num_ctx": 2048,
             }

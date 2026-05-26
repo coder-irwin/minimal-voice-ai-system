@@ -224,7 +224,7 @@ class AIAgent:
             "options": {
                 "temperature": 0.4,
                 "top_p": 0.85,
-                "num_predict": 60,
+                "num_predict": 150,
                 "repeat_penalty": 1.1,
                 "num_ctx": 512,
                 "num_thread": 8,

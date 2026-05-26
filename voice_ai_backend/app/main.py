@@ -45,7 +45,7 @@ load_dotenv()
 from app.stt import STTEngine
 from app.llm import AIAgent
 from app.vad import EnergyVAD
-from app.session import Session, session_manager
+from app.session import Session, session_manager, PERSONAS
 from app.memory_manager import MemoryManager
 from app.tts_manager import TTSManager
 from app.persistence import session_storage
@@ -80,13 +80,26 @@ class SmartSentenceChunker:
     so TTS starts speaking ASAP. Subsequent chunks wait for natural sentence
     boundaries for proper prosody.
     """
-    def __init__(self, first_chunk_chars: int = 8, min_chars: int = 20, max_chars: int = 120, comma_min: int = 35):
+    def __init__(self, first_chunk_chars: int = 5, min_chars: int = 20, max_chars: int = 120, comma_min: int = 35):
         self.first_chunk_chars = first_chunk_chars
         self.min_chars = min_chars
         self.max_chars = max_chars
         self.comma_min = comma_min
         self.buffer = ""
         self._first_emitted = False
+
+    def _clean_text(self, text: str) -> str:
+        """Strips out markdown syntax (asterisks, hashes, list headers, etc.) to ensure conversational TTS stability."""
+        import re
+        # Remove asterisks (**bold**, *italic*), underscores, and header hashes
+        text = text.replace("**", "").replace("*", "").replace("_", "").replace("#", "")
+        # Remove bullet point hyphens at the start of sentences
+        text = re.sub(r'^\s*-\s+', '', text)
+        # Remove numeric list bullets like "1. ", "2. "
+        text = re.sub(r'^\s*\d+\.\s+', '', text)
+        # Replace multi-spaces or newlines with a single space
+        text = re.sub(r'\s+', ' ', text)
+        return text.strip()
 
     def feed(self, token: str) -> list[str]:
         self.buffer += token
@@ -113,7 +126,7 @@ class SmartSentenceChunker:
                         split_idx = space_idx - 1  # keep the space on the right side
                 
                 if split_idx != -1:
-                    chunk = self.buffer[:split_idx+1].strip()
+                    chunk = self._clean_text(self.buffer[:split_idx+1])
                     self.buffer = self.buffer[split_idx+1:]
                     if chunk:
                         chunks.append(chunk)
@@ -155,7 +168,7 @@ class SmartSentenceChunker:
                     split_idx = space_idx
                     
             if split_idx != -1:
-                chunk = self.buffer[:split_idx+1].strip()
+                chunk = self._clean_text(self.buffer[:split_idx+1])
                 self.buffer = self.buffer[split_idx+1:]
                 if chunk:
                     chunks.append(chunk)
@@ -165,7 +178,7 @@ class SmartSentenceChunker:
         return chunks
 
     def flush(self) -> list[str]:
-        chunk = self.buffer.strip()
+        chunk = self._clean_text(self.buffer)
         self.buffer = ""
         self._first_emitted = False
         return [chunk] if chunk else []
@@ -623,7 +636,8 @@ async def websocket_endpoint(websocket: WebSocket):
         "available_models", 
         llms=available_llms,
         tts_engines=tts.get_available_engines(),
-        tts_voices=tts.get_available_voices()
+        tts_voices=tts.get_available_voices(),
+        personas=list(PERSONAS.keys())
     )
 
     bytes_since_last_partial = 0
@@ -655,15 +669,18 @@ async def websocket_endpoint(websocket: WebSocket):
                             session.tts_engine = config["tts_engine"]
                         if "tts_voice" in config:
                             session.tts_voice = config["tts_voice"]
+                        if "persona" in config:
+                            session.persona = config["persona"]
                             
-                        logger.info(f"[{session_id}] Config updated: LLM={session.llm_model}, TTS={session.tts_engine}/{session.tts_voice}")
+                        logger.info(f"[{session_id}] Config updated: LLM={session.llm_model}, TTS={session.tts_engine}/{session.tts_voice}, Persona={session.persona}")
                         
                         # Initialize persistence for this session
                         asyncio.create_task(
                             session_storage.initialize_session(session_id, {
                                 "llm_model": session.llm_model,
                                 "tts_engine": session.tts_engine,
-                                "tts_voice": session.tts_voice
+                                "tts_voice": session.tts_voice,
+                                "persona": session.persona
                             })
                         )
                         

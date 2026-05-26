@@ -3,6 +3,11 @@ from typing import AsyncGenerator, Tuple
 
 from app.tts.piper_provider import PiperProvider
 from app.tts.kokoro_provider import KokoroProvider
+from app.tts.orpheus_provider import OrpheusProvider
+from app.tts.chattts_provider import ChatTTSProvider
+from app.tts.bark_provider import BarkProvider
+from app.tts.fish_speech_provider import FishSpeechProvider
+from app.tts.f5tts_provider import F5TTSProvider
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +29,12 @@ class TTSManager:
         # Initialize providers
         self.providers = {
             "piper": PiperProvider(),
-            "kokoro": KokoroProvider()
+            "kokoro": KokoroProvider(),
+            "orpheus": OrpheusProvider(),
+            "chattts": ChatTTSProvider(),
+            "bark": BarkProvider(),
+            "fish_speech": FishSpeechProvider(),
+            "f5tts": F5TTSProvider()
         }
         self._initialized = True
         logger.info("TTS Manager initialized.")
