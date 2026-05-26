@@ -1,13 +1,36 @@
-fastapi
-uvicorn
-faster-whisper
-websockets
-pyaudio
-google-genai
-python-dotenv
-aiohttp
-piper-tts
-psutil
-kokoro-onnx
-soundfile
-webrtcvad
+# ==============================================================================
+# Glocal Assist Realtime Voice AI System — Dependency Requirements
+# ==============================================================================
+
+# --- Core Web Server & Orchestration ---
+fastapi>=0.100.0
+uvicorn>=0.22.0
+websockets>=11.0
+aiohttp>=3.8.0
+python-dotenv>=1.0.0
+psutil>=5.9.0
+
+# --- Speech-to-Text (STT) & VAD ---
+faster-whisper>=0.10.0
+webrtcvad>=2.0.10
+numpy>=1.24.0
+
+# --- Audio Input/Output & Processing ---
+pyaudio>=0.2.13
+soundfile>=0.12.0
+librosa>=0.10.0
+
+# --- Cloud LLM Fallback ---
+google-genai>=0.1.0
+
+# --- Realtime Local Neural TTS (ONNX CoreML/CUDA) ---
+kokoro-onnx>=0.1.9
+piper-tts>=1.2.0
+
+# ==============================================================================
+# Optional: Expressive Neural TTS Packages (GPU Servers Only)
+# ==============================================================================
+# To unlock full local neural rendering for expressive engines, uncomment below:
+# suno-bark>=0.1.0
+# fish-speech>=0.1.0
+# f5-tts>=0.1.0
