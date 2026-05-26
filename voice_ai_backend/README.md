@@ -238,10 +238,10 @@ mkdir -p models/kokoro
 cd models/kokoro
 
 # Download the ONNX model (~325 MB)
-wget https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v0.1/kokoro-v0_19.onnx
+wget https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files/kokoro-v0_19.onnx
 
 # Download the voice pack (~5.7 MB)
-wget https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v0.1/voices.bin
+wget https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files/voices.bin
 
 cd ../..
 ```
